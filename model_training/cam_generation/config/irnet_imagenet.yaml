@@ -1,0 +1,60 @@
+---
+project: lid_segmentation
+task: irn_train
+log_path: /home/ostap/logs
+
+devices:
+  - 'cuda:1'
+  - 'cuda:2'
+
+train:
+  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  mask_path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/outputs/nohuman/irn_label
+  transform:
+    size: &SIZE 512
+    augmentation_scope: irnet
+    images_normalization: &IMAGES_NORMALIZATION default
+    images_output_format_type: &IMAGES_OUTPUT_FORMAT_TYPE float
+    masks_normalization: &MASK_NORMALIZATION none
+    masks_output_format_type: &MASK_OUTPUT_FORMAT_TYPE numpy
+    size_transform: resize
+
+val:
+  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/dummy.json
+  mask_path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/outputs/irn_label
+  transform:
+    size: *SIZE
+    augmentation_scope: none
+    images_normalization: *IMAGES_NORMALIZATION
+    images_output_format_type: *IMAGES_OUTPUT_FORMAT_TYPE
+    masks_normalization: *MASK_NORMALIZATION
+    masks_output_format_type: *MASK_OUTPUT_FORMAT_TYPE
+    size_transform: resize
+
+model:
+  arch: IRNet
+  freeze_backbone: true
+  loss: []
+  metrics: []
+
+num_epochs: &EPOCHS 20
+batch_size: 32
+optimizer:
+  name: SGD
+  parameters:
+    momentum: 0.9
+    lr: [0.005, 0.05]
+    weight_decay: 1.0e-4
+
+
+scheduler:
+  name: poly
+  power: 0.9
+  max_iters: *EPOCHS
+  min_lr: 1.0e-6
+
+monitor:
+  method: epochs
+  interval: 2
+
+
