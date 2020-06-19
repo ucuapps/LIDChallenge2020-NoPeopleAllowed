@@ -1,14 +1,14 @@
 ---
 project: lid_segmentation
 task: cam_generation
-log_path: /home/ostap/logs
+log_path: ~/logs
 
 devices:
   - 'cuda:1'
   - 'cuda:2'
 
 train:
-  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/train2014_onlyhuman.json
+  path: ILSVRC/Data/DET/train/train2014_onlyhuman.json
   transform:
     size: &SIZE 352
     augmentation_scope: strong
@@ -17,7 +17,7 @@ train:
     size_transform: resize
 
 val:
-  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/val2014_onlyhuman.json
+  path: ILSVRC/Data/DET/train/val2014_onlyhuman.json
   transform:
     size: *SIZE
     augmentation_scope: none
@@ -47,14 +47,6 @@ optimizer:
       - 0.001
       - 0.002
     weight_decay: 1.0e-05
-
-
-#scheduler:
-#  name: plateau
-#  mode: max
-#  patience: 2
-#  factor: 0.5
-#  min_lr: 0.0000001
 
 scheduler:
   name: step

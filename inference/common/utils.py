@@ -5,7 +5,9 @@ from torch.utils.data import Subset
 
 
 def split_dataset(dataset, n_splits):
-    return [Subset(dataset, np.arange(i, len(dataset), n_splits)) for i in range(n_splits)]
+    return [
+        Subset(dataset, np.arange(i, len(dataset), n_splits)) for i in range(n_splits)
+    ]
 
 
 def crf_inference(img, labels, t=10, n_labels=21, gt_prob=0.7):
@@ -17,7 +19,9 @@ def crf_inference(img, labels, t=10, n_labels=21, gt_prob=0.7):
 
     d.setUnaryEnergy(unary)
     d.addPairwiseGaussian(sxy=3, compat=3)
-    d.addPairwiseBilateral(sxy=50, srgb=5, rgbim=np.ascontiguousarray(np.copy(img)), compat=10)
+    d.addPairwiseBilateral(
+        sxy=50, srgb=5, rgbim=np.ascontiguousarray(np.copy(img)), compat=10
+    )
 
     q = d.inference(t)
 

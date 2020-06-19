@@ -7,6 +7,7 @@ class IoULoss(nn.Module):
     """
     Implementation of mean soft-IoU loss for semantic segmentation
     """
+
     __EPSILON = 1e-6
 
     def __init__(self):
@@ -29,8 +30,10 @@ class IoULoss(nn.Module):
         y_pred_proba = F.softmax(y_pred, dim=1)
 
         intersection = torch.sum(y_pred_proba * y_true_dummy, dim=(2, 3))
-        union = torch.sum(y_pred_proba ** 2 + y_true_dummy ** 2, dim=(2, 3)) - intersection
-        iou_loss = ((intersection + self.__EPSILON) / (union + self.__EPSILON))
+        union = (
+            torch.sum(y_pred_proba ** 2 + y_true_dummy ** 2, dim=(2, 3)) - intersection
+        )
+        iou_loss = (intersection + self.__EPSILON) / (union + self.__EPSILON)
 
         return 1 - iou_loss.mean()
 
@@ -60,11 +63,20 @@ class AffinityDisplacementLoss(nn.Module):
 
         self.n_path_lengths = len(path_index.path_indices)
         for i, pi in enumerate(path_index.path_indices):
-            self.register_buffer(AffinityDisplacementLoss.path_indices_prefix + str(i), torch.from_numpy(pi))
+            self.register_buffer(
+                AffinityDisplacementLoss.path_indices_prefix + str(i),
+                torch.from_numpy(pi),
+            )
 
         self.register_buffer(
-            'disp_target',
-            torch.unsqueeze(torch.unsqueeze(torch.from_numpy(path_index.search_dst).transpose(1, 0), 0), -1).float())
+            "disp_target",
+            torch.unsqueeze(
+                torch.unsqueeze(
+                    torch.from_numpy(path_index.search_dst).transpose(1, 0), 0
+                ),
+                -1,
+            ).float(),
+        )
 
     def to_affinity(self, edge):
         aff_list = []
@@ -88,14 +100,25 @@ class AffinityDisplacementLoss(nn.Module):
         cropped_height = height - radius_floor
         cropped_width = width - 2 * radius_floor
 
-        disp_src = disp[:, :, :cropped_height, radius_floor:radius_floor + cropped_width]
+        disp_src = disp[
+            :, :, :cropped_height, radius_floor : radius_floor + cropped_width
+        ]
 
-        disp_dst = [disp[:, :, dy:dy + cropped_height, radius_floor + dx:radius_floor + dx + cropped_width]
-                    for dy, dx in self.path_index.search_dst]
+        disp_dst = [
+            disp[
+                :,
+                :,
+                dy : dy + cropped_height,
+                radius_floor + dx : radius_floor + dx + cropped_width,
+            ]
+            for dy, dx in self.path_index.search_dst
+        ]
         disp_dst = torch.stack(disp_dst, 2)
 
         pair_disp = torch.unsqueeze(disp_src, 2) - disp_dst
-        pair_disp = pair_disp.view(pair_disp.size(0), pair_disp.size(1), pair_disp.size(2), -1)
+        pair_disp = pair_disp.view(
+            pair_disp.size(0), pair_disp.size(1), pair_disp.size(2), -1
+        )
 
         return pair_disp
 
@@ -108,19 +131,29 @@ class AffinityDisplacementLoss(nn.Module):
 
         aff = self.to_affinity(torch.sigmoid(edge_out))
         pos_aff_loss = (-1) * torch.log(aff + 1e-5)
-        neg_aff_loss = (-1) * torch.log(1. + 1e-5 - aff)
+        neg_aff_loss = (-1) * torch.log(1.0 + 1e-5 - aff)
 
         pair_disp = self.to_pair_displacement(dp_out)
         dp_fg_loss = self.to_displacement_loss(pair_disp)
         dp_bg_loss = torch.abs(pair_disp)
 
-        bg_pos_aff_loss = torch.sum(bg_pos_label * pos_aff_loss) / (torch.sum(bg_pos_label) + 1e-5)
-        fg_pos_aff_loss = torch.sum(fg_pos_label * pos_aff_loss) / (torch.sum(fg_pos_label) + 1e-5)
+        bg_pos_aff_loss = torch.sum(bg_pos_label * pos_aff_loss) / (
+            torch.sum(bg_pos_label) + 1e-5
+        )
+        fg_pos_aff_loss = torch.sum(fg_pos_label * pos_aff_loss) / (
+            torch.sum(fg_pos_label) + 1e-5
+        )
         pos_aff_loss = bg_pos_aff_loss / 2 + fg_pos_aff_loss / 2
-        neg_aff_loss = torch.sum(neg_label * neg_aff_loss) / (torch.sum(neg_label) + 1e-5)
+        neg_aff_loss = torch.sum(neg_label * neg_aff_loss) / (
+            torch.sum(neg_label) + 1e-5
+        )
 
-        dp_fg_loss = torch.sum(dp_fg_loss * torch.unsqueeze(fg_pos_label, 1)) / (2 * torch.sum(fg_pos_label) + 1e-5)
-        dp_bg_loss = torch.sum(dp_bg_loss * torch.unsqueeze(bg_pos_label, 1)) / (2 * torch.sum(bg_pos_label) + 1e-5)
+        dp_fg_loss = torch.sum(dp_fg_loss * torch.unsqueeze(fg_pos_label, 1)) / (
+            2 * torch.sum(fg_pos_label) + 1e-5
+        )
+        dp_bg_loss = torch.sum(dp_bg_loss * torch.unsqueeze(bg_pos_label, 1)) / (
+            2 * torch.sum(bg_pos_label) + 1e-5
+        )
 
         total_loss = (pos_aff_loss + neg_aff_loss) / 2 + (dp_fg_loss + dp_bg_loss) / 2
 
@@ -128,17 +161,17 @@ class AffinityDisplacementLoss(nn.Module):
 
 
 def get_loss(loss_config):
-    loss_name = loss_config['name']
-    if loss_name == 'categorical_cross_entropy':
-        return nn.CrossEntropyLoss(ignore_index=loss_config.get('ignore_index', -1))
-    elif loss_name == 'binary_cross_entropy':
-        return nn.BCEWithLogitsLoss(reduction='none')
+    loss_name = loss_config["name"]
+    if loss_name == "categorical_cross_entropy":
+        return nn.CrossEntropyLoss(ignore_index=loss_config.get("ignore_index", -1))
+    elif loss_name == "binary_cross_entropy":
+        return nn.BCEWithLogitsLoss(reduction="none")
 
-    elif loss_name == 'mean_iou':
+    elif loss_name == "mean_iou":
         return IoULoss()
-    elif loss_name == 'kldiv':
-        return nn.KLDivLoss(reduction='none')
-    elif loss_name == 'binary_dice':
+    elif loss_name == "kldiv":
+        return nn.KLDivLoss(reduction="none")
+    elif loss_name == "binary_dice":
         return DiceLossWithLogits()
     else:
         raise ValueError(f"Loss [{loss_name}] not recognized.")

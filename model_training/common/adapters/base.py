@@ -7,48 +7,59 @@ from ..metrics import get_metric
 from ..losses import get_loss
 from ..augmentations import denormalization
 
-__all__ = ['ModelAdapter']
+__all__ = ["ModelAdapter"]
 
 
 class ModelAdapter:
     def __init__(self, config, log_path):
-        self.device = config['devices'][0]
-        self.devices = config['devices']
+        self.device = config["devices"][0]
+        self.devices = config["devices"]
 
         self.log_path = log_path
-        self.criterion = self.get_loss_function(config['model']['loss'])
-        metrics_names = config['model']['metrics']
-        self.metrics = OrderedDict([
-            (metric_name, get_metric(metric_name, config['model']['classes'], self.device))
-            for metric_name in metrics_names
-        ])
-        self.main_metric = metrics_names[0] if len(metrics_names) > 0 else 'loss'
+        self.criterion = self.get_loss_function(config["model"]["loss"])
+        metrics_names = config["model"]["metrics"]
+        self.metrics = OrderedDict(
+            [
+                (
+                    metric_name,
+                    get_metric(metric_name, config["model"]["classes"], self.device),
+                )
+                for metric_name in metrics_names
+            ]
+        )
+        self.main_metric = metrics_names[0] if len(metrics_names) > 0 else "loss"
 
-        self.denormalize = denormalization[config['val']['transform']['images_normalization']]
+        self.denormalize = denormalization[
+            config["val"]["transform"]["images_normalization"]
+        ]
         self.epoch = 0
-        self.mode = 'train'
+        self.mode = "train"
         self.writer = SummaryWriter(self.log_path)
 
-        self.model = get_network(config['model'])
+        self.model = get_network(config["model"])
         self.model.to(self.device)
-        self.model = torch.nn.DataParallel(
-            self.model,
-            device_ids=config['devices']
-        )
+        self.model = torch.nn.DataParallel(self.model, device_ids=config["devices"])
 
     def get_loss_function(self, losses_config):
         if isinstance(losses_config, dict):
-            return {losses_config['name']: (
-                torch.nn.DataParallel(get_loss(losses_config).to(self.device), device_ids=self.devices),
-                1.0
-            )}
-        elif isinstance(losses_config, list):
-            return {x['name']:
-                (
-                    torch.nn.DataParallel(get_loss(x).to(self.device), device_ids=self.devices),
-                    x.get('weight', 1.0)
+            return {
+                losses_config["name"]: (
+                    torch.nn.DataParallel(
+                        get_loss(losses_config).to(self.device), device_ids=self.devices
+                    ),
+                    1.0,
                 )
-                for x in losses_config}
+            }
+        elif isinstance(losses_config, list):
+            return {
+                x["name"]: (
+                    torch.nn.DataParallel(
+                        get_loss(x).to(self.device), device_ids=self.devices
+                    ),
+                    x.get("weight", 1.0),
+                )
+                for x in losses_config
+            }
 
     def set_epoch(self, epoch):
         assert epoch > 0
@@ -66,10 +77,12 @@ class ModelAdapter:
             metric.add(y_pred, y_true)
 
     def get_metrics(self):
-        rv = OrderedDict([
-            (metric_name, metric.get())
-            for metric_name, metric in self.metrics.items()
-        ])
+        rv = OrderedDict(
+            [
+                (metric_name, metric.get())
+                for metric_name, metric in self.metrics.items()
+            ]
+        )
 
         for metric in self.metrics.values():
             metric.reset()
@@ -90,25 +103,25 @@ class ModelAdapter:
 
     def write_to_tensorboard(self, epoch, train_loss, val_loss, batch_sample):
         # write train and val losses
-        for scalar_prefix, loss in zip(('Train', 'Validation'), (train_loss, val_loss)):
-            self.writer.add_scalar(f'{scalar_prefix}_Loss', loss, epoch)
+        for scalar_prefix, loss in zip(("Train", "Validation"), (train_loss, val_loss)):
+            self.writer.add_scalar(f"{scalar_prefix}_Loss", loss, epoch)
 
         for metric in self.metrics.values():
             metric.write_to_tensorboard(self.writer, epoch)
 
         images_grid = self.make_tensorboard_grid(batch_sample)
         if images_grid is not None:
-            self.writer.add_image('Images', images_grid, epoch)
+            self.writer.add_image("Images", images_grid, epoch)
 
     def zero_grad(self):
         self.model.module.zero_grad()
 
     def train(self):
-        self.mode = 'train'
+        self.mode = "train"
         return self.model.module.train()
 
     def eval(self):
-        self.mode = 'val'
+        self.mode = "val"
         return self.model.module.eval()
 
     def get_params_groups(self):

@@ -114,7 +114,11 @@ def _work(process_id, config):
 
 
 def run():
-    with open(os.path.join(os.path.dirname(__file__), 'config', "multiscale_imagenet_cam.yaml")) as fp:
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "config", "multiscale_imagenet_cam.yaml"
+        )
+    ) as fp:
         config = yaml.full_load(fp)
 
     print("[ ", end="")

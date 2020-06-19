@@ -1,15 +1,15 @@
 ---
 project: lid_segmentation
 task: irn_train
-log_path: /home/ostap/logs
+log_path: ~/logs
 
 devices:
   - 'cuda:1'
   - 'cuda:2'
 
 train:
-  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
-  mask_path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/outputs/nohuman/irn_label
+  path: ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  mask_path: ILSVRC/Data/DET/train/outputs/nohuman/irn_label
   transform:
     size: &SIZE 512
     augmentation_scope: irnet
@@ -20,8 +20,8 @@ train:
     size_transform: resize
 
 val:
-  path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/dummy.json
-  mask_path: /datasets/extra_space2/LID/ILSVRC/Data/DET/train/outputs/irn_label
+  path: ILSVRC/Data/DET/train/dummy.json
+  mask_path: ILSVRC/Data/DET/train/outputs/irn_label
   transform:
     size: *SIZE
     augmentation_scope: none

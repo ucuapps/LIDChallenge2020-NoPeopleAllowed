@@ -16,8 +16,10 @@ from model_training.common.datasets.irn import indexing
 def _work(process_id, config):
     device = config["devices"][process_id]
 
-    model = get_network(config['model'])
-    model.load_state_dict(torch.load(config['model']['weights_path'], map_location=device)['model'])
+    model = get_network(config["model"])
+    model.load_state_dict(
+        torch.load(config["model"]["weights_path"], map_location=device)["model"]
+    )
     model.to(device)
     model.eval()
 
@@ -32,33 +34,49 @@ def _work(process_id, config):
                 X.to(device, non_blocking=True),
                 y.to(device, non_blocking=True),
                 name[0],
-                orig_size[0]
+                orig_size[0],
             )
 
-            if os.path.exists(os.path.join(config["data"]["output_path"], name + ".npy")):
+            if os.path.exists(
+                os.path.join(config["data"]["output_path"], name + ".npy")
+            ):
                 continue
 
             X_tta = torch.cat([X, X.flip(-1)], dim=0)
             edge, _ = model(X_tta)
             edge = torch.sigmoid(edge[0] / 2 + edge[1].flip(-1) / 2)
 
-            cam_dict = np.load(config['data']['cam_path'] + '/' + name + '.npy', allow_pickle=True).item()
-            cams = torch.from_numpy(cam_dict['cam']).to(device)
-            keys = np.pad(cam_dict['keys'] + 1, (1, 0), mode='constant')
+            cam_dict = np.load(
+                config["data"]["cam_path"] + "/" + name + ".npy", allow_pickle=True
+            ).item()
+            cams = torch.from_numpy(cam_dict["cam"]).to(device)
+            keys = np.pad(cam_dict["keys"] + 1, (1, 0), mode="constant")
 
-            cams = F.interpolate(cams.unsqueeze(1), size=edge.shape[1:],
-                                 mode='bilinear', align_corners=False).squeeze(1)
-            rw = indexing.propagate_to_edge(cams, edge, beta=config['beta'], exp_times=config['exp_times'], radius=5,
-                                            device=device)
+            cams = F.interpolate(
+                cams.unsqueeze(1),
+                size=edge.shape[1:],
+                mode="bilinear",
+                align_corners=False,
+            ).squeeze(1)
+            rw = indexing.propagate_to_edge(
+                cams,
+                edge,
+                beta=config["beta"],
+                exp_times=config["exp_times"],
+                radius=5,
+                device=device,
+            )
 
-            rw_up = F.interpolate(rw, size=(orig_size[0], orig_size[1]), mode='bilinear', align_corners=False)
+            rw_up = F.interpolate(
+                rw,
+                size=(orig_size[0], orig_size[1]),
+                mode="bilinear",
+                align_corners=False,
+            )
             rw_up = rw_up.relu_() / torch.max(rw_up)
             np.save(
                 os.path.join(config["data"]["output_path"], name + ".npy"),
-                {
-                    "keys": keys,
-                    "map": rw_up.squeeze(0).cpu().numpy()
-                },
+                {"keys": keys, "map": rw_up.squeeze(0).cpu().numpy()},
             )
 
             # rw_up_bg = F.pad(rw_up, (0, 0, 0, 0, 1, 0), value=config['sem_seg_bg_thres'])[0]
@@ -72,7 +90,9 @@ def _work(process_id, config):
 
 
 def run():
-    with open(os.path.join(os.path.dirname(__file__), 'config', "irn_inference.yaml")) as fp:
+    with open(
+        os.path.join(os.path.dirname(__file__), "config", "irn_inference.yaml")
+    ) as fp:
         config = yaml.full_load(fp)
 
     print("[ ", end="")

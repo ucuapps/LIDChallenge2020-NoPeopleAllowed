@@ -9,13 +9,14 @@ class IRNet(nn.Module):
         super(IRNet, self).__init__()
 
         self.frozen_backbone = freeze_backbone
-        backbone = torchvision.models.resnet.resnet50(pretrained=True,
-                                                      replace_stride_with_dilation=[False, False, True])
+        backbone = torchvision.models.resnet.resnet50(
+            pretrained=True, replace_stride_with_dilation=[False, False, True]
+        )
         self.stage1 = nn.Sequential(
             deepcopy(backbone.conv1),
             deepcopy(backbone.bn1),
             deepcopy(backbone.relu),
-            deepcopy(backbone.maxpool)
+            deepcopy(backbone.maxpool),
         )
         self.stage2 = deepcopy(backbone.layer1)
         self.stage3 = deepcopy(backbone.layer2)
@@ -36,19 +37,19 @@ class IRNet(nn.Module):
         self.fc_edge3 = nn.Sequential(
             nn.Conv2d(512, 32, 1, bias=False),
             nn.GroupNorm(4, 32),
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_edge4 = nn.Sequential(
             nn.Conv2d(1024, 32, 1, bias=False),
             nn.GroupNorm(4, 32),
-            nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=4, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_edge5 = nn.Sequential(
             nn.Conv2d(2048, 32, 1, bias=False),
             nn.GroupNorm(4, 32),
-            nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=4, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_edge6 = nn.Conv2d(160, 1, 1, bias=True)
@@ -72,19 +73,19 @@ class IRNet(nn.Module):
         self.fc_dp4 = nn.Sequential(
             nn.Conv2d(1024, 256, 1, bias=False),
             nn.GroupNorm(16, 256),
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_dp5 = nn.Sequential(
             nn.Conv2d(2048, 256, 1, bias=False),
             nn.GroupNorm(16, 256),
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_dp6 = nn.Sequential(
             nn.Conv2d(768, 256, 1, bias=False),
             nn.GroupNorm(16, 256),
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
             nn.ReLU(inplace=True),
         )
         self.fc_dp7 = nn.Sequential(
@@ -92,12 +93,35 @@ class IRNet(nn.Module):
             nn.GroupNorm(16, 256),
             nn.ReLU(inplace=True),
             nn.Conv2d(256, 2, 1, bias=False),
-            nn.InstanceNorm2d(num_features=2, affine=False, track_running_stats=True)  # to normalize displacement field
+            nn.InstanceNorm2d(
+                num_features=2, affine=False, track_running_stats=True
+            ),  # to normalize displacement field
         )
 
-        self.backbone = [self.stage1, self.stage2, self.stage3, self.stage4, self.stage5]
-        self.edge_layers = [self.fc_edge1, self.fc_edge2, self.fc_edge3, self.fc_edge4, self.fc_edge5, self.fc_edge6]
-        self.dp_layers = [self.fc_dp1, self.fc_dp2, self.fc_dp3, self.fc_dp4, self.fc_dp5, self.fc_dp6, self.fc_dp7]
+        self.backbone = [
+            self.stage1,
+            self.stage2,
+            self.stage3,
+            self.stage4,
+            self.stage5,
+        ]
+        self.edge_layers = [
+            self.fc_edge1,
+            self.fc_edge2,
+            self.fc_edge3,
+            self.fc_edge4,
+            self.fc_edge5,
+            self.fc_edge6,
+        ]
+        self.dp_layers = [
+            self.fc_dp1,
+            self.fc_dp2,
+            self.fc_dp3,
+            self.fc_dp4,
+            self.fc_dp5,
+            self.fc_dp6,
+            self.fc_dp7,
+        ]
 
         if freeze_backbone:
             self.freeze_backbone()
@@ -137,15 +161,19 @@ class IRNet(nn.Module):
 
     def get_params_groups(self):
         if self.frozen_backbone:
-            return [p for module in self.edge_layers for p in module.parameters()], \
-                   [p for module in self.dp_layers for p in module.parameters()],
+            return (
+                [p for module in self.edge_layers for p in module.parameters()],
+                [p for module in self.dp_layers for p in module.parameters()],
+            )
         else:
-            return [p for module in self.backbone for p in module.parameters()], \
-                   [p for module in self.edge_layers for p in module.parameters()], \
-                   [p for module in self.dp_layers for p in module.parameters()],
+            return (
+                [p for module in self.backbone for p in module.parameters()],
+                [p for module in self.edge_layers for p in module.parameters()],
+                [p for module in self.dp_layers for p in module.parameters()],
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     model = IRNet(freeze_backbone=True)
     print(list(model.parameters()))
 
