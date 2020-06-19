@@ -1,0 +1,42 @@
+---
+project: lid_segmentation
+task: cam_generation
+log_path: /home/ostap/logs
+
+maps_layer: layer4
+weights_layer: fc
+
+train:
+  input_path: ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  output_path: ILSVRC/Data/DET/train/out_masks/cam_results
+  transform:
+    size: &SIZE 352
+    augmentation_scope: none
+    images_normalization: &IMAGES_NORMALIZATION default
+    images_output_format_type: &IMAGES_OUTPUT_FORMAT_TYPE float
+    masks_normalization: &MASKS_NORMALIZATION none
+    masks_output_format_type: &MASKS_FORMAT_TYPE long
+    size_transform: resize
+
+val:
+  input_path: LID_track1/val/val.txt
+  output_path: LID_track1/val/out_masks/cam_results
+  transform:
+    size: *SIZE
+    augmentation_scope: none
+    images_normalization: *IMAGES_NORMALIZATION
+    images_output_format_type: *IMAGES_OUTPUT_FORMAT_TYPE
+    masks_normalization: *MASKS_NORMALIZATION
+    masks_output_format_type: *MASKS_FORMAT_TYPE
+    size_transform: resize
+
+model:
+  arch: resnet50
+  weights_path:  ~/logs/cam_generation/resnet50-2020-03-05-01-22-34/model_best.h5
+  pretrained: True
+  classes: 200
+
+batch_size: 32
+interpolation: bicubic
+background_threshold: 0.2
+use_predicted_labels: True

@@ -1,0 +1,60 @@
+---
+project: lid_segmentation
+task: segmentation
+log_path: ~/logs
+
+devices:
+  - 'cuda:1'
+  - 'cuda:2'
+
+train:
+  path: ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  mask_path: ILSVRC/Data/DET/train/outputs/nohuman/sem_seg_thresh0.3
+  transform:
+    size: &SIZE 352
+    augmentation_scope: strong
+    images_normalization: &IMAGES_NORMALIZATION default
+    images_output_format_type: &IMAGES_OUTPUT_FORMAT_TYPE float
+    masks_normalization: &MASKS_NORMALIZATION none
+    masks_output_format_type: &MASKS_FORMAT_TYPE long
+    size_transform: resize
+
+val:
+  path: LID_track1/val/val.json
+  mask_path: LID_track1/val/masks
+  transform:
+    size: *SIZE
+    augmentation_scope: none
+    images_normalization: *IMAGES_NORMALIZATION
+    images_output_format_type: *IMAGES_OUTPUT_FORMAT_TYPE
+    masks_normalization: *MASKS_NORMALIZATION
+    masks_output_format_type: *MASKS_FORMAT_TYPE
+    size_transform: resize
+
+model:
+  arch: deeplabv3plus_resnet50
+  pretrained: false
+  classes: 201
+  loss:
+    name: categorical_cross_entropy
+  metrics:
+    - iou
+
+num_epochs: &EPOCHS 40
+batch_size: 12
+optimizer:
+  name: SGD
+  parameters:
+    momentum: 0.9
+    weight_decay: 1.0e-6
+    lr: [0.001, 0.01]
+
+scheduler:
+  name: poly
+  max_iters: *EPOCHS
+  min_lr: 1.0e-6
+  power: 0.9
+
+monitor:
+  method: epochs
+  interval: 10

@@ -1,0 +1,26 @@
+project: lid_segmentation
+task: cam_generation
+
+devices:
+  - 'cuda:1'
+  - 'cuda:2'
+
+data:
+  path: ILSVRC/Data/DET/train/task_ucu.json
+  cam_path: ILSVRC/Data/DET/train/outputs/nohuman/cam
+  output_path: ILSVRC/Data/DET/train/outputs/nohuman/sem_seg
+  transform:
+    size: 512
+    augmentation_scope: none
+    images_normalization: default
+    images_output_format_type: float
+    size_transform: resize
+
+model:
+  arch: IRNet
+  freeze_backbone: true
+  weights_path: ~/logs/irn_train/IRNet-2020-06-02-23-51-46/model_last.h5
+
+beta: 10
+exp_times: 8
+sem_seg_bg_thres: 0.25

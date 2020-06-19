@@ -1,0 +1,21 @@
+---
+project: lid_segmentation
+task: cam_generation
+
+num_workers: 24
+
+conf_fg_threshold: 0.0075
+conf_bg_threshold: 0.24
+
+data:
+  path: ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  cams_dir: ILSVRC/Data/DET/train/outputs/nohuman/cam
+  output_path: ILSVRC/Data/DET/train/outputs/nohuman/irn_label
+  transform:
+    size: 352
+    augmentation_scope: none
+    images_normalization: none
+    images_output_format_type: none
+    size_transform: resize
+
+rescale_output: False
