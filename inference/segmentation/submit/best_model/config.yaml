@@ -1,0 +1,56 @@
+batch_size: 12
+devices:
+- cuda:1
+- cuda:2
+log_path: /home/logs
+model:
+  arch: deeplabv3plus_resnet50
+  classes: 201
+  loss:
+    name: categorical_cross_entropy
+  metrics:
+  - iou
+  pretrained: false
+monitor:
+  interval: 10
+  method: epochs
+num_epochs: 40
+optimizer:
+  name: SGD
+  parameters:
+    lr:
+    - 0.001
+    - 0.01
+    momentum: 0.9
+    weight_decay: 1.0e-06
+project: lid_segmentation
+scheduler:
+  max_iters: 40
+  min_lr: 1.0e-06
+  name: poly
+  power: 0.9
+task: segmentation
+train:
+  mask_path: /home/LID/ILSVRC/Data/DET/train/outputs/nohuman/sem_seg_thresh0.3
+  path: /home/LID/ILSVRC/Data/DET/train/irn_list_nohuman_confident_0.8.json
+  transform:
+    augmentation_scope: strong
+    images_normalization: default
+    images_output_format_type: float
+    masks_normalization: none
+    masks_output_format_type: long
+    size: 352
+    size_transform: resize
+train_size: 41156
+val:
+  mask_path: /home/LID/LID_track1/val/masks
+  path: /home/LID/LID_track1/val/val.json
+  transform:
+    augmentation_scope: none
+    images_normalization: default
+    images_output_format_type: float
+    masks_normalization: none
+    masks_output_format_type: long
+    size: 352
+    size_transform: resize
+val_size: 4690
