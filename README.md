@@ -73,11 +73,12 @@ The path to corresponding config: *model_training/segmentation/config/imagenet.y
 
 Step 7. **Segmentation model inference.**  
 In the final step we run end-to-end inference using segmentation model trained on the previous step.
-To make the inference on segmentation model run the following command:
+To make the inference on segmentation model use the module `inference/segmentation/submit`. It is fully independent
+from the whole repository and can be used separately. To run inference refer to 
 ```
-python inference/segmentation/TODO.py
+python inference/segmentation/submit/INSTRUCTIONS.md
 ```
-The path to corresponding config: *inference/segmentation/config/TODO.yaml* 
+
 
 
 ## Citation
